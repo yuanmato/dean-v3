@@ -378,12 +378,12 @@ def call_model_json(client, meter, *, system, user, model, use_web_fetch, max_to
     """OpenAI Responses API call with an agentic loop:
        - the hosted web_search tool runs automatically inside each response (discovery/confirmation);
        - our fetch_page() function calls are executed here and fed back (deterministic page fetching
-         + pagination), chained via previous_response_id;
-       - output is forced to a single JSON object to avoid the prose/JSON-mix parse failures.
+         + pagination), chained via previous_response_id.
+    NOTE: OpenAI forbids forced JSON mode together with web_search, so we instead instruct JSON-only
+    in the prompts and parse with the robust extract_json (last valid object) below.
     Retries only TRANSIENT (pre-billing) errors; a billed-but-unparseable response is NOT retried."""
     tools = [WEB_SEARCH_TOOL] + ([FETCH_TOOL] if use_web_fetch else [])
-    base = dict(model=model, instructions=system, tools=tools,
-                max_output_tokens=max_tokens, text={"format": {"type": "json_object"}})
+    base = dict(model=model, instructions=system, tools=tools, max_output_tokens=max_tokens)
     last = None
     for attempt in range(tries):
         try:
